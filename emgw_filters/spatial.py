@@ -114,7 +114,7 @@ class SpatialLocation():
     def get_skyprobs(fname):
         """
         """
-        data = hp.read_map('LALInference1.fits.gz,0')
+        data = hp.read_map(fname)
         df = pd.DataFrame(data, columns=['prob'])
         df['hid'] = np.arange(len(df))
         df.sort_values(by='prob', inplace=True, ascending=True)
