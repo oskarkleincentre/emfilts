@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import healpy as hp
 from astropy.table import Table, Column
+from astropy.io import fits
+from .times import get_jd_from_mjd
 
 
 class SpatialLocation():
@@ -18,19 +20,24 @@ class SpatialLocation():
     spatial_fits : sequence of strings 
     """
 
-    def __init__(self, merger_times, spatial_fits_files,
+    def __init__(self, spatial_fits_files, merger_times=None,
                  probability_fractions=None,
                  event_names=None):
         """
 
         """
+        self.fnames = np.ravel(spatial_fits_files)
+        if merger_times is None:
+            merger_times = self.get_merger_times(self.fnames)
+        
+        self.times = np.ravel(merger_times)
+
         if event_names is None:
             self.event_names = np.arange(len(merger_times))
         else:
             self.event_names = np.ravel(event_names)
 
-        self.fnames = np.ravel(spatial_fits_files)
-        self.times = np.ravel(merger_times)
+
 
         if probability_fractions is None:
             probability_fractions = np.ones_like(self.times) * 0.9
@@ -39,7 +46,31 @@ class SpatialLocation():
         self._sky_probs = None
         self._skypix = None
 
- 
+
+    @staticmethod
+    def get_merger_times(fnames):
+        """ return a list of merger times in Julian Date from the
+        LIGO files
+
+        Parameters
+        ---------
+        fnames : sequence of file names of LIGO event inferred from the
+            data
+
+        Returns
+        -------
+        sequence of julian days of merger times.
+        """
+
+        jds = list()
+        for fname in fnames:
+            data = fits.open(fname)
+            mjd = data[1].header['MJD-OBS']
+            jd = get_jd_from_mjd(mjd)
+            jds.append(jd)
+
+        return np.array(jds)
+
     @property
     def nside(self):
         return list(hp.npix2nside(len(df)) for df in self.sky_probs)
